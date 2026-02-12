@@ -6,12 +6,17 @@ using WpfEnterpriseTemplate.Core.Models;
 namespace WpfEnterpriseTemplate.Core.Services;
 
 /// <summary>
-/// Service de communication avec l'API externe JSONPlaceholder.
+/// Service de communication avec les API (locale et externe).
+/// Tente d'abord de contacter l'API locale (WpfEnterpriseTemplate.Api)
+/// sur http://localhost:5100. Si elle n'est pas disponible, bascule
+/// automatiquement vers JSONPlaceholder comme fallback.
+///
 /// Encapsule les appels HTTP et gère :
 /// - L'état de chargement global (IsBusy)
 /// - L'état de connexion API (IsApiConnected)
 /// - La gestion des erreurs réseau
 /// - Les opérations asynchrones (async/await)
+/// - Le basculement automatique local → externe
 ///
 /// Le HttpClient est injecté via IHttpClientFactory pour une gestion
 /// optimale du pool de connexions et éviter les problèmes de socket exhaustion.
@@ -32,9 +37,19 @@ public class ApiService : IApiService
     private readonly IApplicationState _applicationState;
 
     /// <summary>
-    /// URL de base de l'API JSONPlaceholder utilisée pour les démonstrations.
+    /// URL de base de l'API locale (projet WpfEnterpriseTemplate.Api).
     /// </summary>
-    private const string BaseUrl = "https://jsonplaceholder.typicode.com";
+    private const string LocalApiUrl = "http://localhost:5100";
+
+    /// <summary>
+    /// URL de base de l'API externe JSONPlaceholder (fallback).
+    /// </summary>
+    private const string FallbackApiUrl = "https://jsonplaceholder.typicode.com";
+
+    /// <summary>
+    /// Source de données actuellement utilisée.
+    /// </summary>
+    private string _currentDataSource = "Aucune";
 
     /// <summary>
     /// Initialise le service API avec ses dépendances injectées.
@@ -48,53 +63,158 @@ public class ApiService : IApiService
     }
 
     /// <summary>
-    /// Récupère la liste des utilisateurs depuis JSONPlaceholder.
+    /// Nom de la source de données utilisée lors du dernier appel réussi.
+    /// Permet à l'interface d'afficher si les données viennent de l'API locale ou externe.
+    /// </summary>
+    public string CurrentDataSource => _currentDataSource;
+
+    /// <summary>
+    /// Récupère la liste des utilisateurs.
     ///
-    /// Déroulement :
-    /// 1. Active l'indicateur IsBusy pour informer l'UI
-    /// 2. Effectue un appel GET asynchrone vers /users
-    /// 3. Désérialise la réponse JSON en liste de User
-    /// 4. Met à jour IsApiConnected selon le résultat
-    /// 5. Désactive IsBusy dans le bloc finally (garanti même en cas d'erreur)
+    /// Stratégie de basculement :
+    /// 1. Tente d'abord l'API locale (http://localhost:5100/api/users)
+    /// 2. Si échec, bascule vers JSONPlaceholder (fallback)
+    /// 3. Si les deux échouent, retourne une liste vide
     ///
-    /// En cas d'erreur (réseau, désérialisation), retourne une liste vide
-    /// et met IsApiConnected à false.
+    /// Met à jour l'état global (IsBusy, IsApiConnected) pendant l'exécution.
     /// </summary>
     /// <returns>Liste des utilisateurs ou liste vide en cas d'erreur.</returns>
     public async Task<IEnumerable<User>> GetUsersAsync()
     {
-        // Activation de l'indicateur de chargement global
         _applicationState.IsBusy = true;
 
         try
         {
-            // Création d'un HttpClient via la factory (gestion optimale du pool)
             var client = _httpClientFactory.CreateClient();
 
-            // Appel GET asynchrone - le thread UI n'est pas bloqué
-            var users = await client.GetFromJsonAsync<List<User>>($"{BaseUrl}/users");
+            // Tentative 1 : API locale
+            try
+            {
+                var users = await client.GetFromJsonAsync<List<User>>($"{LocalApiUrl}/api/users");
 
-            // L'appel a réussi, la connexion API est active
-            _applicationState.IsApiConnected = true;
+                if (users is not null)
+                {
+                    _applicationState.IsApiConnected = true;
+                    _currentDataSource = "API Locale (localhost:5100)";
+                    return users;
+                }
+            }
+            catch (HttpRequestException)
+            {
+                // L'API locale n'est pas disponible, on passe au fallback
+            }
 
-            return users ?? new List<User>();
-        }
-        catch (HttpRequestException)
-        {
-            // Erreur réseau : connexion impossible, timeout, etc.
-            _applicationState.IsApiConnected = false;
-            return new List<User>();
+            // Tentative 2 : JSONPlaceholder (fallback)
+            try
+            {
+                var users = await client.GetFromJsonAsync<List<User>>($"{FallbackApiUrl}/users");
+
+                _applicationState.IsApiConnected = true;
+                _currentDataSource = "JSONPlaceholder (fallback)";
+                return users ?? new List<User>();
+            }
+            catch (HttpRequestException)
+            {
+                // Le fallback a aussi échoué
+                _applicationState.IsApiConnected = false;
+                _currentDataSource = "Aucune";
+                return new List<User>();
+            }
         }
         catch (Exception)
         {
-            // Autre erreur (désérialisation, etc.)
             _applicationState.IsApiConnected = false;
+            _currentDataSource = "Aucune";
             return new List<User>();
         }
         finally
         {
-            // Toujours désactiver l'indicateur de chargement, même en cas d'erreur
             _applicationState.IsBusy = false;
+        }
+    }
+
+    /// <summary>
+    /// Crée un nouvel utilisateur via l'API locale.
+    /// Nécessite que l'API locale soit en cours d'exécution.
+    /// </summary>
+    /// <param name="user">Utilisateur à créer (l'ID est ignoré, attribué par le serveur).</param>
+    /// <returns>L'utilisateur créé avec son ID, ou null en cas d'erreur.</returns>
+    public async Task<User?> CreateUserAsync(User user)
+    {
+        _applicationState.IsBusy = true;
+
+        try
+        {
+            var client = _httpClientFactory.CreateClient();
+            var response = await client.PostAsJsonAsync($"{LocalApiUrl}/api/users", user);
+
+            if (response.IsSuccessStatusCode)
+            {
+                _applicationState.IsApiConnected = true;
+                return await response.Content.ReadFromJsonAsync<User>();
+            }
+
+            return null;
+        }
+        catch (HttpRequestException)
+        {
+            _applicationState.IsApiConnected = false;
+            return null;
+        }
+        finally
+        {
+            _applicationState.IsBusy = false;
+        }
+    }
+
+    /// <summary>
+    /// Supprime un utilisateur via l'API locale.
+    /// Nécessite que l'API locale soit en cours d'exécution.
+    /// </summary>
+    /// <param name="userId">Identifiant de l'utilisateur à supprimer.</param>
+    /// <returns>True si la suppression a réussi, false sinon.</returns>
+    public async Task<bool> DeleteUserAsync(int userId)
+    {
+        _applicationState.IsBusy = true;
+
+        try
+        {
+            var client = _httpClientFactory.CreateClient();
+            var response = await client.DeleteAsync($"{LocalApiUrl}/api/users/{userId}");
+
+            _applicationState.IsApiConnected = true;
+            return response.IsSuccessStatusCode;
+        }
+        catch (HttpRequestException)
+        {
+            _applicationState.IsApiConnected = false;
+            return false;
+        }
+        finally
+        {
+            _applicationState.IsBusy = false;
+        }
+    }
+
+    /// <summary>
+    /// Vérifie l'état de l'API locale via l'endpoint /api/health.
+    /// Appel rapide pour tester la connectivité sans charger de données.
+    /// </summary>
+    /// <returns>True si l'API locale répond avec succès.</returns>
+    public async Task<bool> CheckHealthAsync()
+    {
+        try
+        {
+            var client = _httpClientFactory.CreateClient();
+            var response = await client.GetAsync($"{LocalApiUrl}/api/health");
+
+            var isHealthy = response.IsSuccessStatusCode;
+            _applicationState.IsApiConnected = isHealthy;
+            return isHealthy;
+        }
+        catch (HttpRequestException)
+        {
+            return false;
         }
     }
 }
