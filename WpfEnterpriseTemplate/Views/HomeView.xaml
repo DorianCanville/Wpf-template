@@ -1,0 +1,133 @@
+<UserControl x:Class="WpfEnterpriseTemplate.Views.HomeView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignHeight="500" d:DesignWidth="700">
+
+    <!--
+    Vue d'accueil de l'application.
+    Affiche la liste des utilisateurs et les boutons d'action.
+    DataContext est automatiquement défini par le DataTemplate dans App.xaml.
+    Aucun code métier dans le code-behind.
+    -->
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <!-- Titre de la page -->
+            <RowDefinition Height="Auto"/>
+            <!-- Boutons d'action -->
+            <RowDefinition Height="Auto"/>
+            <!-- Liste des utilisateurs -->
+            <RowDefinition Height="*"/>
+            <!-- Barre de statut -->
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Titre de la page d'accueil -->
+        <TextBlock Grid.Row="0"
+                   Text="Accueil - Liste des utilisateurs"
+                   FontSize="24"
+                   FontWeight="Bold"
+                   Foreground="#2C3E50"
+                   Margin="0,0,0,15"/>
+
+        <!-- Zone de boutons d'action -->
+        <StackPanel Grid.Row="1"
+                    Orientation="Horizontal"
+                    Margin="0,0,0,15">
+
+            <!-- Bouton de chargement des utilisateurs depuis l'API -->
+            <!-- Désactivé automatiquement quand IsBusy est true (via CanExecute) -->
+            <Button Content="Charger les utilisateurs"
+                    Command="{Binding LoadUsersCommand}"
+                    Padding="15,8"
+                    Margin="0,0,10,0"
+                    Background="#3498DB"
+                    Foreground="White"
+                    FontWeight="SemiBold"
+                    BorderThickness="0"
+                    Cursor="Hand"/>
+
+            <!-- Bouton de navigation vers le détail -->
+            <!-- Désactivé si aucun utilisateur n'est sélectionné -->
+            <Button Content="Voir le détail"
+                    Command="{Binding NavigateToDetailCommand}"
+                    Padding="15,8"
+                    Margin="0,0,10,0"
+                    Background="#2ECC71"
+                    Foreground="White"
+                    FontWeight="SemiBold"
+                    BorderThickness="0"
+                    Cursor="Hand"/>
+
+            <!-- Indicateur de chargement visible uniquement quand IsBusy est true -->
+            <TextBlock Text="Chargement en cours..."
+                       VerticalAlignment="Center"
+                       Foreground="#E67E22"
+                       FontStyle="Italic"
+                       Visibility="{Binding ApplicationState.IsBusy,
+                                    Converter={StaticResource BoolToVisConverter}}"/>
+        </StackPanel>
+
+        <!-- Liste des utilisateurs avec DataTemplate pour l'affichage -->
+        <ListView Grid.Row="2"
+                  ItemsSource="{Binding Users}"
+                  SelectedItem="{Binding SelectedUser}"
+                  BorderThickness="1"
+                  BorderBrush="#BDC3C7">
+
+            <ListView.ItemTemplate>
+                <!-- DataTemplate définissant l'affichage de chaque UserViewModel -->
+                <DataTemplate>
+                    <Border Padding="10,8" BorderThickness="0,0,0,1" BorderBrush="#ECF0F1">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="40"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Identifiant de l'utilisateur -->
+                            <TextBlock Grid.Column="0"
+                                       Text="{Binding Id, StringFormat='#{0}'}"
+                                       FontWeight="Bold"
+                                       Foreground="#7F8C8D"
+                                       VerticalAlignment="Center"/>
+
+                            <!-- Nom et pseudo -->
+                            <StackPanel Grid.Column="1" Margin="10,0">
+                                <TextBlock Text="{Binding Name}"
+                                           FontWeight="SemiBold"
+                                           FontSize="14"
+                                           Foreground="#2C3E50"/>
+                                <TextBlock Text="{Binding Username, StringFormat='@{0}'}"
+                                           Foreground="#95A5A6"
+                                           FontSize="12"/>
+                            </StackPanel>
+
+                            <!-- Email -->
+                            <TextBlock Grid.Column="2"
+                                       Text="{Binding Email}"
+                                       Foreground="#3498DB"
+                                       VerticalAlignment="Center"
+                                       FontSize="12"/>
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+
+        <!-- Barre de statut en bas -->
+        <Border Grid.Row="3"
+                Background="#ECF0F1"
+                Padding="10,8"
+                Margin="0,10,0,0"
+                CornerRadius="4">
+            <TextBlock Text="{Binding StatusMessage}"
+                       Foreground="#7F8C8D"
+                       FontSize="12"/>
+        </Border>
+    </Grid>
+</UserControl>

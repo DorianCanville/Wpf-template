@@ -1,0 +1,139 @@
+<Window x:Class="WpfEnterpriseTemplate.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="WPF Enterprise Template - MVVM"
+        Height="650" Width="900"
+        WindowStartupLocation="CenterScreen"
+        Background="#FFFFFF">
+
+    <!--
+    Fenêtre principale de l'application.
+    Le DataContext (MainViewModel) est défini dans le code-behind via DI.
+    Aucune logique métier dans cette fenêtre : tout est bindé au ViewModel.
+
+    Structure :
+    - Barre d'en-tête avec informations globales (utilisateur, connexion API, horloge)
+    - Zone de contenu principale avec ContentControl et DataTemplates
+    - Barre de statut en bas
+    -->
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <!-- Barre d'en-tête -->
+            <RowDefinition Height="Auto"/>
+            <!-- Zone de contenu principale (navigation) -->
+            <RowDefinition Height="*"/>
+            <!-- Barre de statut -->
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- ===== BARRE D'EN-TÊTE ===== -->
+        <Border Grid.Row="0"
+                Background="#2C3E50"
+                Padding="15,10">
+            <DockPanel>
+                <!-- Titre de l'application -->
+                <TextBlock Text="WPF Enterprise Template"
+                           Foreground="White"
+                           FontSize="18"
+                           FontWeight="Bold"
+                           VerticalAlignment="Center"
+                           DockPanel.Dock="Left"/>
+
+                <!-- Informations à droite : horloge et statut connexion -->
+                <StackPanel DockPanel.Dock="Right"
+                            Orientation="Horizontal"
+                            HorizontalAlignment="Right">
+
+                    <!-- Indicateur de connexion API -->
+                    <Border CornerRadius="10"
+                            Padding="10,4"
+                            Margin="0,0,15,0"
+                            VerticalAlignment="Center">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Background" Value="#E74C3C"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding ApplicationState.IsApiConnected}" Value="True">
+                                        <Setter Property="Background" Value="#2ECC71"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <TextBlock Foreground="White" FontSize="11" VerticalAlignment="Center">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Text" Value="API Hors ligne"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ApplicationState.IsApiConnected}" Value="True">
+                                            <Setter Property="Text" Value="API Connectée"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </Border>
+
+                    <!-- Horloge mise à jour par la tâche périodique -->
+                    <TextBlock Text="{Binding ApplicationState.CurrentDateTime, StringFormat='{}{0:dd/MM/yyyy HH:mm:ss}'}"
+                               Foreground="#ECF0F1"
+                               FontSize="13"
+                               VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <!-- Utilisateur courant -->
+                <TextBlock Text="{Binding ApplicationState.CurrentUser, StringFormat='Utilisateur : {0}'}"
+                           Foreground="#BDC3C7"
+                           FontSize="12"
+                           VerticalAlignment="Center"
+                           Margin="30,0,0,0"/>
+            </DockPanel>
+        </Border>
+
+        <!-- ===== ZONE DE CONTENU PRINCIPALE ===== -->
+        <!-- ContentControl affiche le ViewModel courant -->
+        <!-- Les DataTemplates définis dans App.xaml résolvent automatiquement la View -->
+        <ContentControl Grid.Row="1"
+                        Content="{Binding CurrentViewModel}"/>
+
+        <!-- ===== INDICATEUR GLOBAL IsBusy ===== -->
+        <!-- Overlay semi-transparent affiché pendant les opérations longues -->
+        <Border Grid.Row="1"
+                Background="#80000000"
+                Visibility="{Binding ApplicationState.IsBusy,
+                             Converter={StaticResource BoolToVisConverter}}">
+            <StackPanel HorizontalAlignment="Center"
+                        VerticalAlignment="Center">
+                <TextBlock Text="Chargement en cours..."
+                           Foreground="White"
+                           FontSize="18"
+                           HorizontalAlignment="Center"/>
+                <ProgressBar IsIndeterminate="True"
+                             Width="200"
+                             Height="4"
+                             Margin="0,10,0,0"/>
+            </StackPanel>
+        </Border>
+
+        <!-- ===== BARRE DE STATUT ===== -->
+        <Border Grid.Row="2"
+                Background="#ECF0F1"
+                Padding="15,6">
+            <DockPanel>
+                <TextBlock Text="{Binding ApplicationState.CurrentUser, StringFormat='Connecté en tant que : {0}'}"
+                           Foreground="#7F8C8D"
+                           FontSize="11"
+                           DockPanel.Dock="Left"/>
+
+                <TextBlock Text="{Binding ApplicationState.CurrentDateTime, StringFormat='{}{0:dddd dd MMMM yyyy}'}"
+                           Foreground="#7F8C8D"
+                           FontSize="11"
+                           HorizontalAlignment="Right"
+                           DockPanel.Dock="Right"/>
+            </DockPanel>
+        </Border>
+    </Grid>
+</Window>
