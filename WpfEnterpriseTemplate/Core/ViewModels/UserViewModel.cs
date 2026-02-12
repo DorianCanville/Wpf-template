@@ -29,6 +29,12 @@ public class UserViewModel : BaseViewModel
     }
 
     /// <summary>
+    /// Expose le modèle User sous-jacent.
+    /// Utilisé pour passer les données brutes aux services API lors des opérations CRUD.
+    /// </summary>
+    public User Model => _user;
+
+    /// <summary>
     /// Identifiant unique de l'utilisateur.
     /// </summary>
     public int Id => _user.Id;

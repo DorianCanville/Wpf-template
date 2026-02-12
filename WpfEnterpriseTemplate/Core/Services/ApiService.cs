@@ -7,7 +7,7 @@ namespace WpfEnterpriseTemplate.Core.Services;
 
 /// <summary>
 /// Service de communication avec l'API locale (.NET 10).
-/// Appelle uniquement l'API locale sur http://localhost:5100.
+/// Appelle l'API locale sur http://localhost:5100 pour les opérations CRUD.
 ///
 /// Encapsule les appels HTTP et gère :
 /// - L'état de chargement global (IsBusy)
@@ -68,6 +68,88 @@ public class ApiService : IApiService
         catch (Exception)
         {
             return new List<User>();
+        }
+        finally
+        {
+            _applicationState.IsBusy = false;
+        }
+    }
+
+    /// <summary>
+    /// Crée un nouvel utilisateur via POST /api/users.
+    /// Met à jour IsBusy pendant l'opération.
+    /// </summary>
+    /// <param name="user">Utilisateur à créer.</param>
+    /// <returns>L'utilisateur créé avec son ID, ou null en cas d'erreur.</returns>
+    public async Task<User?> CreateUserAsync(User user)
+    {
+        _applicationState.IsBusy = true;
+
+        try
+        {
+            var client = _httpClientFactory.CreateClient();
+            var response = await client.PostAsJsonAsync($"{LocalApiUrl}/api/users", user);
+            response.EnsureSuccessStatusCode();
+
+            return await response.Content.ReadFromJsonAsync<User>();
+        }
+        catch
+        {
+            return null;
+        }
+        finally
+        {
+            _applicationState.IsBusy = false;
+        }
+    }
+
+    /// <summary>
+    /// Met à jour un utilisateur existant via PUT /api/users/{id}.
+    /// Met à jour IsBusy pendant l'opération.
+    /// </summary>
+    /// <param name="user">Utilisateur avec les nouvelles données.</param>
+    /// <returns>L'utilisateur mis à jour, ou null en cas d'erreur.</returns>
+    public async Task<User?> UpdateUserAsync(User user)
+    {
+        _applicationState.IsBusy = true;
+
+        try
+        {
+            var client = _httpClientFactory.CreateClient();
+            var response = await client.PutAsJsonAsync($"{LocalApiUrl}/api/users/{user.Id}", user);
+            response.EnsureSuccessStatusCode();
+
+            return await response.Content.ReadFromJsonAsync<User>();
+        }
+        catch
+        {
+            return null;
+        }
+        finally
+        {
+            _applicationState.IsBusy = false;
+        }
+    }
+
+    /// <summary>
+    /// Supprime un utilisateur via DELETE /api/users/{id}.
+    /// Met à jour IsBusy pendant l'opération.
+    /// </summary>
+    /// <param name="userId">Identifiant de l'utilisateur à supprimer.</param>
+    /// <returns>True si la suppression a réussi.</returns>
+    public async Task<bool> DeleteUserAsync(int userId)
+    {
+        _applicationState.IsBusy = true;
+
+        try
+        {
+            var client = _httpClientFactory.CreateClient();
+            var response = await client.DeleteAsync($"{LocalApiUrl}/api/users/{userId}");
+            return response.IsSuccessStatusCode;
+        }
+        catch
+        {
+            return false;
         }
         finally
         {

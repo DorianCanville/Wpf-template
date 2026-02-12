@@ -4,11 +4,14 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d"
-             d:DesignHeight="550" d:DesignWidth="750">
+             d:DesignHeight="650" d:DesignWidth="750">
 
     <!--
     Vue d'accueil de l'application.
-    Affiche la liste des utilisateurs récupérés depuis l'API locale (proxy JSONPlaceholder).
+    Affiche la liste des utilisateurs avec opérations CRUD complètes
+    (Ajouter, Modifier, Supprimer) via l'API locale.
+    Inclut un formulaire d'édition inline qui apparaît/disparaît
+    selon la propriété IsEditing du ViewModel.
     DataContext est automatiquement défini par le DataTemplate dans App.xaml.
     Aucun code métier dans le code-behind.
     -->
@@ -18,6 +21,8 @@
             <!-- Titre de la page -->
             <RowDefinition Height="Auto"/>
             <!-- Boutons d'action -->
+            <RowDefinition Height="Auto"/>
+            <!-- Formulaire d'édition inline (visible uniquement en mode édition) -->
             <RowDefinition Height="Auto"/>
             <!-- Liste des utilisateurs -->
             <RowDefinition Height="*"/>
@@ -49,6 +54,39 @@
                     BorderThickness="0"
                     Cursor="Hand"/>
 
+            <!-- Bouton pour ajouter un nouvel utilisateur -->
+            <Button Content="Ajouter"
+                    Command="{Binding AddUserCommand}"
+                    Padding="15,8"
+                    Margin="0,0,8,4"
+                    Background="#9B59B6"
+                    Foreground="White"
+                    FontWeight="SemiBold"
+                    BorderThickness="0"
+                    Cursor="Hand"/>
+
+            <!-- Bouton pour modifier l'utilisateur sélectionné -->
+            <Button Content="Modifier"
+                    Command="{Binding EditUserCommand}"
+                    Padding="15,8"
+                    Margin="0,0,8,4"
+                    Background="#F39C12"
+                    Foreground="White"
+                    FontWeight="SemiBold"
+                    BorderThickness="0"
+                    Cursor="Hand"/>
+
+            <!-- Bouton pour supprimer l'utilisateur sélectionné -->
+            <Button Content="Supprimer"
+                    Command="{Binding DeleteUserCommand}"
+                    Padding="15,8"
+                    Margin="0,0,8,4"
+                    Background="#E74C3C"
+                    Foreground="White"
+                    FontWeight="SemiBold"
+                    BorderThickness="0"
+                    Cursor="Hand"/>
+
             <!-- Bouton de navigation vers le détail -->
             <!-- Désactivé si aucun utilisateur n'est sélectionné -->
             <Button Content="Voir le détail"
@@ -71,8 +109,103 @@
                                     Converter={StaticResource BoolToVisConverter}}"/>
         </WrapPanel>
 
+        <!-- ===== FORMULAIRE D'ÉDITION INLINE ===== -->
+        <!-- Visible uniquement quand IsEditing est true -->
+        <!-- Permet d'ajouter ou modifier un utilisateur sans changer de page -->
+        <Border Grid.Row="2"
+                Background="#F8F9FA"
+                BorderBrush="#3498DB"
+                BorderThickness="1"
+                CornerRadius="6"
+                Padding="16"
+                Margin="0,0,0,12"
+                Visibility="{Binding IsEditing,
+                             Converter={StaticResource BoolToVisConverter}}">
+            <StackPanel>
+                <!-- Titre du formulaire (dynamique : Ajouter / Modifier) -->
+                <TextBlock Text="{Binding EditFormTitle}"
+                           FontSize="16"
+                           FontWeight="SemiBold"
+                           Foreground="#2C3E50"
+                           Margin="0,0,0,12"/>
+
+                <!-- Grille de champs de saisie sur 2 colonnes -->
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="12"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Nom complet -->
+                    <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,0,8">
+                        <TextBlock Text="Nom *" FontWeight="SemiBold" Foreground="#495057" Margin="0,0,0,4"/>
+                        <TextBox Text="{Binding EditName, UpdateSourceTrigger=PropertyChanged}"
+                                 Padding="8,6" FontSize="13"/>
+                    </StackPanel>
+
+                    <!-- Nom d'utilisateur (pseudo) -->
+                    <StackPanel Grid.Row="0" Grid.Column="2" Margin="0,0,0,8">
+                        <TextBlock Text="Pseudo" FontWeight="SemiBold" Foreground="#495057" Margin="0,0,0,4"/>
+                        <TextBox Text="{Binding EditUsername, UpdateSourceTrigger=PropertyChanged}"
+                                 Padding="8,6" FontSize="13"/>
+                    </StackPanel>
+
+                    <!-- Email -->
+                    <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,0,8">
+                        <TextBlock Text="Email" FontWeight="SemiBold" Foreground="#495057" Margin="0,0,0,4"/>
+                        <TextBox Text="{Binding EditEmail, UpdateSourceTrigger=PropertyChanged}"
+                                 Padding="8,6" FontSize="13"/>
+                    </StackPanel>
+
+                    <!-- Téléphone -->
+                    <StackPanel Grid.Row="1" Grid.Column="2" Margin="0,0,0,8">
+                        <TextBlock Text="Téléphone" FontWeight="SemiBold" Foreground="#495057" Margin="0,0,0,4"/>
+                        <TextBox Text="{Binding EditPhone, UpdateSourceTrigger=PropertyChanged}"
+                                 Padding="8,6" FontSize="13"/>
+                    </StackPanel>
+
+                    <!-- Site web -->
+                    <StackPanel Grid.Row="2" Grid.Column="0" Margin="0,0,0,8">
+                        <TextBlock Text="Site web" FontWeight="SemiBold" Foreground="#495057" Margin="0,0,0,4"/>
+                        <TextBox Text="{Binding EditWebsite, UpdateSourceTrigger=PropertyChanged}"
+                                 Padding="8,6" FontSize="13"/>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Boutons Sauvegarder / Annuler -->
+                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                    <!-- Sauvegarder - Désactivé si le nom est vide -->
+                    <Button Content="Sauvegarder"
+                            Command="{Binding SaveUserCommand}"
+                            Padding="15,8"
+                            Margin="0,0,8,0"
+                            Background="#27AE60"
+                            Foreground="White"
+                            FontWeight="SemiBold"
+                            BorderThickness="0"
+                            Cursor="Hand"/>
+
+                    <!-- Annuler - Ferme le formulaire -->
+                    <Button Content="Annuler"
+                            Command="{Binding CancelEditCommand}"
+                            Padding="15,8"
+                            Background="#95A5A6"
+                            Foreground="White"
+                            FontWeight="SemiBold"
+                            BorderThickness="0"
+                            Cursor="Hand"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
         <!-- Liste des utilisateurs avec DataTemplate pour l'affichage -->
-        <ListView Grid.Row="2"
+        <ListView Grid.Row="3"
                   ItemsSource="{Binding Users}"
                   SelectedItem="{Binding SelectedUser}"
                   BorderThickness="1"
@@ -120,7 +253,7 @@
         </ListView>
 
         <!-- Barre de statut en bas -->
-        <Border Grid.Row="3"
+        <Border Grid.Row="4"
                 Background="#ECF0F1"
                 Padding="10,8"
                 Margin="0,10,0,0"
