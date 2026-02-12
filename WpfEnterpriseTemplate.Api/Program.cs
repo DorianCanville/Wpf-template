@@ -34,7 +34,14 @@ var app = builder.Build();
 // Activation de Swagger uniquement en développement
 if (app.Environment.IsDevelopment())
 {
+    // Expose le document OpenAPI au format JSON
     app.MapOpenApi();
+
+    // Interface graphique Swagger UI accessible sur /swagger
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/openapi/v1.json", "WpfEnterpriseTemplate API v1");
+    });
 }
 
 // ===== ENDPOINTS UTILISATEURS =====
