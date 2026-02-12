@@ -133,6 +133,12 @@ public class HomeViewModel : BaseViewModel
         // Abonnement à l'événement de mise à jour des données
         // IMPORTANT : Ne pas oublier de se désabonner pour éviter les memory leaks
         _dataUpdateService.DataUpdated += OnDataUpdated;
+
+        // Chargement automatique des utilisateurs à l'initialisation du ViewModel.
+        // Déclenché en fire-and-forget car le constructeur ne peut pas être async.
+        // Cela garantit que la liste est toujours à jour lors de la navigation
+        // (retour depuis la page détail, première ouverture, etc.).
+        _ = LoadUsersAsync();
     }
 
     // ===== PROPRIÉTÉS DE COLLECTION =====
