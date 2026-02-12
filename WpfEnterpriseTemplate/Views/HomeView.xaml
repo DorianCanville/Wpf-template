@@ -8,8 +8,7 @@
 
     <!--
     Vue d'accueil de l'application.
-    Affiche la liste des utilisateurs et les boutons d'action.
-    Supporte les appels vers l'API locale (.NET 10) avec fallback JSONPlaceholder.
+    Affiche la liste des utilisateurs récupérés depuis l'API locale (proxy JSONPlaceholder).
     DataContext est automatiquement défini par le DataTemplate dans App.xaml.
     Aucun code métier dans le code-behind.
     -->
@@ -17,8 +16,6 @@
     <Grid Margin="20">
         <Grid.RowDefinitions>
             <!-- Titre de la page -->
-            <RowDefinition Height="Auto"/>
-            <!-- Indicateur de source API -->
             <RowDefinition Height="Auto"/>
             <!-- Boutons d'action -->
             <RowDefinition Height="Auto"/>
@@ -36,30 +33,8 @@
                    Foreground="#2C3E50"
                    Margin="0,0,0,10"/>
 
-        <!-- Indicateur de source de données API -->
-        <Border Grid.Row="1"
-                Background="#F8F9FA"
-                BorderBrush="#DEE2E6"
-                BorderThickness="1"
-                CornerRadius="4"
-                Padding="10,6"
-                Margin="0,0,0,12">
-            <DockPanel>
-                <TextBlock Text="Source : "
-                           Foreground="#6C757D"
-                           FontSize="12"
-                           VerticalAlignment="Center"
-                           DockPanel.Dock="Left"/>
-                <TextBlock Text="{Binding DataSourceInfo}"
-                           Foreground="#495057"
-                           FontSize="12"
-                           FontWeight="SemiBold"
-                           VerticalAlignment="Center"/>
-            </DockPanel>
-        </Border>
-
         <!-- Zone de boutons d'action -->
-        <WrapPanel Grid.Row="2"
+        <WrapPanel Grid.Row="1"
                    Margin="0,0,0,12">
 
             <!-- Bouton de chargement des utilisateurs depuis l'API -->
@@ -86,28 +61,6 @@
                     BorderThickness="0"
                     Cursor="Hand"/>
 
-            <!-- Bouton d'ajout d'un utilisateur test (API locale uniquement) -->
-            <Button Content="Ajouter un utilisateur"
-                    Command="{Binding AddUserCommand}"
-                    Padding="15,8"
-                    Margin="0,0,8,4"
-                    Background="#9B59B6"
-                    Foreground="White"
-                    FontWeight="SemiBold"
-                    BorderThickness="0"
-                    Cursor="Hand"/>
-
-            <!-- Bouton de suppression de l'utilisateur sélectionné (API locale uniquement) -->
-            <Button Content="Supprimer la sélection"
-                    Command="{Binding DeleteUserCommand}"
-                    Padding="15,8"
-                    Margin="0,0,8,4"
-                    Background="#E74C3C"
-                    Foreground="White"
-                    FontWeight="SemiBold"
-                    BorderThickness="0"
-                    Cursor="Hand"/>
-
             <!-- Indicateur de chargement visible uniquement quand IsBusy est true -->
             <TextBlock Text="Chargement en cours..."
                        VerticalAlignment="Center"
@@ -119,7 +72,7 @@
         </WrapPanel>
 
         <!-- Liste des utilisateurs avec DataTemplate pour l'affichage -->
-        <ListView Grid.Row="3"
+        <ListView Grid.Row="2"
                   ItemsSource="{Binding Users}"
                   SelectedItem="{Binding SelectedUser}"
                   BorderThickness="1"
@@ -167,7 +120,7 @@
         </ListView>
 
         <!-- Barre de statut en bas -->
-        <Border Grid.Row="4"
+        <Border Grid.Row="3"
                 Background="#ECF0F1"
                 Padding="10,8"
                 Margin="0,10,0,0"
